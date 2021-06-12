@@ -15,6 +15,8 @@ using namespace std;
 #define M 64
 #define connectN 4
 #define sleeptime 0
+#define WIDTH 9
+#define HEIGHT 7
 
 
 //reset game
@@ -28,15 +30,6 @@ void newGame(uint64_t &bitboard, uint64_t &playerBitboard, uint64_t &botBitboard
 	cout << "\t\t\tNEW GAME ... you: " << playerId << " bot: " << botId;
 }
 
-//print board to screen
-void printBoard(vector<string>& board){
-	cout << endl;
-	cout << "0 1 2 3 4 5 6 7 8" << endl;
-	for(string a:board){
-		cout << a<<endl;
-	}
-}
-
 void printBitboard(uint64_t &playerBitboard, uint64_t &botBitboard, char playerId, char botId, int width, int height){
 	cout << endl;
 	bitset<M> p = playerBitboard;
@@ -45,7 +38,10 @@ void printBitboard(uint64_t &playerBitboard, uint64_t &botBitboard, char playerI
 	cout << "player bitboard: " << p << endl;
 	cout << "bot bitboard:    " << b << endl;
 	cout << endl;
-	cout << "0 1 2 3 4 5 6 7 8 " << endl;
+	for(int i=0; i!=width; i++){
+		cout << i << " ";
+	}
+	cout <<  endl;
 	for(int i = 0; i!= height;i++){
 		for(int j = 0; j!= width;j++){
 			if(p[index] == 1){
@@ -61,12 +57,10 @@ void printBitboard(uint64_t &playerBitboard, uint64_t &botBitboard, char playerI
 		}
 		cout << endl;
 	}
-	//cout << p << endl;
-	//cout << b << endl;
 }
 
 
-//add move to board vector
+//add player's move to board vector
 void updateBoard(vector<string>& board, int move, char id){
 	move*=2;
 	for(int i=0; i != board.size();i++){
@@ -93,7 +87,7 @@ void updateBitboard(uint64_t &board, uint64_t &playerBoard, int move, int width,
 	bitset<M> b = board;
 }
 
-
+//count total 1s in bit
 size_t popcount(size_t n) {
     std::bitset<sizeof(size_t) * CHAR_BIT> b(n);
     return b.count();
@@ -121,17 +115,6 @@ int checkWinner(uint64_t board, int move, int width, int height, char id){
 	//4 in row horizontal
 	for(int i=0; i!=(height*width);i++){
 		masked_board = board & mask & mask2;
-
-
-		/*m = board;
-		cout << "board:        " << m << endl;
-		m = mask;
-		cout << "mask:         " << m << endl;
-		m = mask2;
-		cout << "mask2:        " << m << endl;
-		m = masked_board;
-		cout << "masked_board: " << m << endl;
-		cout << endl;*/
 		mask <<= 1;
 		if(i!= 0 && i%(width) ==0){
 			mask2 <<= width;
@@ -161,7 +144,8 @@ int checkWinner(uint64_t board, int move, int width, int height, char id){
 #if DEBUG 
 				m = board;
 				cout << "board:        " << m << endl;
-				m = mask;
+				m = mask;int boardWidth = 9;
+	// int boardHeight = 7;
 				cout << "mask:         " << m << endl;
 				m = mask3;
 				cout << "mask3:        " << m << endl;
@@ -204,17 +188,22 @@ class MCT{
 
 
 int main(){
-	int boardWidth = 9;
-	int boardHeight = 7;
-	vector<string> board = {//0 1 2 3 4 5 6 7 8<--move  board 9X7
-							 ". . . . . . . . .",  //0
-							 ". . . . . . . . .",  //1
-							 ". . . . . . . . .",  //2
-						 	 ". . . . . . . . .",  //3
-						 	 ". . . . . . . . .",  //4
-							 ". . . . . . . . .",  //5
-							 ". . . . . . . . .",  //7
-							 ". . . . . . . . ."}; //6
+	//defining board
+	int boardWidth;
+	int boardHeight;
+	cout << "board width: ";
+	cin >> boardWidth;
+	cout << "board height: ";
+	cin >> boardHeight;
+	if(boardWidth<4 || boardWidth>12){
+		cout << "invalid board width" << endl;
+		boardWidth = WIDTH;
+	}
+	if(boardHeight<4 || boardHeight>8){
+		cout << "invalid board heigth" << endl;
+		boardHeight = HEIGHT;
+	}
+
 	uint64_t bitboard;
 	uint64_t playerBitboard;
 	uint64_t botBitboard;
@@ -233,7 +222,6 @@ int main(){
 		printBitboard(playerBitboard, botBitboard, playerId, botId, boardWidth, boardHeight);
 		cout << "enter index: ";
 		cin >> playerMove;
-
 		//decide bot's move
 		botMove = rand()%7;
 
@@ -266,5 +254,3 @@ int main(){
 		}
 	}
 }
-
-	
