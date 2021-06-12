@@ -49,10 +49,10 @@ void printBitboard(uint64_t &playerBitboard, uint64_t &botBitboard, char playerI
 	for(int i = 0; i!= height;i++){
 		for(int j = 0; j!= width;j++){
 			if(p[index] == 1){
-				cout << playerId<< " ";
+				cout << "\x1b[31m" << playerId<< "\x1b[0m ";
 			}
 			else if(b[index] == 1){
-				cout << botId << " ";
+				cout << "\x1b[34m" << botId << "\x1b[0m ";
 			}
 			else{
 				cout << ". ";
