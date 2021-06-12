@@ -11,9 +11,10 @@
 
 using namespace std;
 
-#define DEBUG 1
+#define DEBUG 0
 #define M 64
 #define connectN 4
+#define sleeptime 0
 
 
 //reset game
@@ -38,7 +39,7 @@ void printBoard(vector<string>& board){
 
 void printBitboard(uint64_t &playerBitboard, uint64_t &botBitboard, char playerId, char botId, int width, int height){
 	cout << endl;
-		bitset<M> p = playerBitboard;
+	bitset<M> p = playerBitboard;
 	bitset<M> b = botBitboard;
 	int index = height*width;
 	cout << "player bitboard: " << p << endl;
@@ -99,9 +100,8 @@ size_t popcount(size_t n) {
 }
 
 
-//check if there is 4 in row on board
-int checkWinner(uint64_t board, int move, int width, int height){
-	int winner = 0; //0=no winner, 1=winner;
+//check if there is 4 in row on board 0=no winner, 1=winner;
+int checkWinner(uint64_t board, int move, int width, int height, char id){
 	uint64_t mask = 0; 
 	uint64_t mask2 = 0;
 	uint64_t mask3 = 0;
@@ -132,14 +132,13 @@ int checkWinner(uint64_t board, int move, int width, int height){
 		m = masked_board;
 		cout << "masked_board: " << m << endl;
 		cout << endl;*/
-
-
 		mask <<= 1;
 		if(i!= 0 && i%(width) ==0){
 			mask2 <<= width;
 		}
 		//check 4 in row after masking
 		if(popcount(masked_board) == connectN){
+			printBitboard(masked_board, masked_board, id, id, width, height); 
 			return 1;
 		}
 	}
@@ -149,43 +148,45 @@ int checkWinner(uint64_t board, int move, int width, int height){
 	mask2 = 1;
 	mask3; //111111111111111
 	//create mask with height of 4 
-	for(int i=0; i!=(width+1)*connectN;i++){
+	for(int i=0; i!=width*connectN;i++){
 		mask3 <<= 1;
 		mask3 ^= 1;
 	}
 	masked_board = 0;
 	int index = 0;
-	for(int j=0; j!=width;j++){
-		for(int i=0; i!=height;i++){
-			masked_board += board & mask &mask3;
+	for(int i=0; i!=(height-connectN+1);i++){
+		for(int j=0; j!=width;j++){  
+			for(int i=0; i!=height;i++){
+				masked_board += board & mask &mask3;
 #if DEBUG 
-			m = board;
-			cout << "board:        " << m << endl;
-			m = mask;
-			cout << "mask:         " << m << endl;
-			m = mask3;
-			cout << "mask3:        " << m << endl;
-			m = masked_board;
-			m = masked_board;
-			cout << "masked_board: " << m << endl;
-			cout << endl;
+				m = board;
+				cout << "board:        " << m << endl;
+				m = mask;
+				cout << "mask:         " << m << endl;
+				m = mask3;
+				cout << "mask3:        " << m << endl;
+				m = masked_board;
+				m = masked_board;
+				cout << "masked_board: " << m << endl;
+				cout << endl;
 #endif	
-			mask <<= width;
-			if(index!=0 && index % ((width+1)*connectN) == 0){
-				mask3 <<= (width+1)*connectN;
+				mask <<= width;
+				//check 4 in row after masking
+				if(popcount(masked_board) == connectN){
+					printBitboard(masked_board, masked_board, id, id, width, height); 
+					return 1;
+				}
 			}
-			//check 4 in row after masking
-			if(popcount(masked_board) == connectN){
-				return 1;
-			}
-			index++;
+			mask2<<=1;
+			mask = mask2;
+			masked_board = 0;
 		}
-		mask2 <<= 1;
+		mask2 = 1;
 		mask = mask2;
-		masked_board = 0;
+		mask3 <<=width;
 	}
 
-	return winner;
+	return 0;
 }
 
 
@@ -239,26 +240,25 @@ int main(){
 		//PLAYER goes first bot second
 		if(playerId == 'X'){
 			updateBitboard(bitboard, playerBitboard, playerMove, boardWidth, boardHeight);
-			sleep(1);
-			printBitboard(playerBitboard, botBitboard, playerId, botId, boardWidth, boardHeight);
+			sleep(sleeptime);
 			updateBitboard(bitboard, botBitboard, botMove, boardWidth, boardHeight);
-
+			printBitboard(playerBitboard, botBitboard, playerId, botId, boardWidth, boardHeight);
 		}
 		else{ //BOT goes first, player second
 			updateBitboard(bitboard, botBitboard, botMove, boardWidth, boardHeight);
-			printBitboard(playerBitboard, botBitboard, playerId, botId, boardWidth, boardHeight);
-			sleep(1);
 			updateBitboard(bitboard, playerBitboard, playerMove, boardWidth, boardHeight);
+			printBitboard(playerBitboard, botBitboard, playerId, botId, boardWidth, boardHeight);
+			sleep(sleeptime);
 		}
 		
 		//check for connect 4
-		if(checkWinner(playerBitboard, playerMove, boardWidth, boardHeight)){
+		if(checkWinner(playerBitboard, playerMove, boardWidth, boardHeight, playerId)){
 			cout << "\t\t\t\tYOU WIN!" << endl;
 			playerScore ++;
 			cout << "\t\t\tscore:   you: " << playerScore << "  bot: " << botScore << endl;
 			newGame(bitboard, playerBitboard, botBitboard, playerId, botId);
 		}
-		else if (checkWinner(botBitboard, botMove, boardWidth, boardHeight)){
+		else if (checkWinner(botBitboard, botMove, boardWidth, boardHeight, botId)){
 			cout << "\t\t\t\tYOU LOOSE :(" << endl;
 			botScore ++;
 			cout << "\t\t\tscore:   you: " << playerScore << "  bot: " << botScore << endl;
