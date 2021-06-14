@@ -18,16 +18,24 @@ using namespace std;
 #define WIDTH 9
 #define HEIGHT 7
 
+void printBitboard(uint64_t &playerBitboard, uint64_t &botBitboard, char playerId, char botId, int width, int height);
+void updateBitboard(uint64_t &board, uint64_t &playerBoard, int move, int width, int height);
 
 //reset game
-void newGame(uint64_t &bitboard, uint64_t &playerBitboard, uint64_t &botBitboard, char &playerId, char &botId){
+void newGame(uint64_t &bitboard, uint64_t &playerBitboard, uint64_t &botBitboard, char &playerId, char &botId, int width, int height){
 	bitboard = 0;
 	playerBitboard = 0;
 	botBitboard = 0;
 	//X goes first and 0 goes second
-	playerId=(rand()%1 == 0) ? 'X':'O'; 
+	playerId=(rand()%2 == 0) ? 'X':'O'; 
 	botId = (playerId=='X') ? 'O':'X';
 	cout << "\t\t\tNEW GAME ... you: " << playerId << " bot: " << botId;
+	//if bot goes first
+	if(botId=='X'){
+		int botMove = rand()%7;
+		updateBitboard(bitboard, botBitboard, botMove, width, height);
+	}
+	printBitboard(playerBitboard, botBitboard, playerId, botId, width, height);
 }
 
 void printBitboard(uint64_t &playerBitboard, uint64_t &botBitboard, char playerId, char botId, int width, int height){
@@ -35,8 +43,12 @@ void printBitboard(uint64_t &playerBitboard, uint64_t &botBitboard, char playerI
 	bitset<M> p = playerBitboard;
 	bitset<M> b = botBitboard;
 	int index = height*width;
-	cout << "player bitboard: " << p << endl;
-	cout << "bot bitboard:    " << b << endl;
+	if(playerId == botId){
+		cout << "winner bitboard: " << p << endl;
+	}else{
+		cout << "player bitboard: " << p << endl;
+		cout << "bot bitboard:    " << b << endl;
+	}
 	cout << endl;
 	for(int i=0; i!=width; i++){
 		cout << i << " ";
@@ -318,42 +330,31 @@ int main(){
 	char botId;
 
 
-	newGame(bitboard, playerBitboard, botBitboard, playerId, botId);
+	newGame(bitboard, playerBitboard, botBitboard, playerId, botId, boardWidth, boardHeight);
 	//game loop
 	while(1){
-		//printBoard(board);
-		printBitboard(playerBitboard, botBitboard, playerId, botId, boardWidth, boardHeight);
 		cout << "enter index: ";
 		cin >> playerMove;
 		//decide bot's move
 		botMove = rand()%7;
 
-		//PLAYER goes first bot second
-		if(playerId == 'X'){
-			updateBitboard(bitboard, playerBitboard, playerMove, boardWidth, boardHeight);
-			sleep(sleeptime);
-			updateBitboard(bitboard, botBitboard, botMove, boardWidth, boardHeight);
-			printBitboard(playerBitboard, botBitboard, playerId, botId, boardWidth, boardHeight);
-		}
-		else{ //BOT goes first, player second
-			updateBitboard(bitboard, botBitboard, botMove, boardWidth, boardHeight);
-			updateBitboard(bitboard, playerBitboard, playerMove, boardWidth, boardHeight);
-			printBitboard(playerBitboard, botBitboard, playerId, botId, boardWidth, boardHeight);
-			sleep(sleeptime);
-		}
-		
+		updateBitboard(bitboard, playerBitboard, playerMove, boardWidth, boardHeight);
+		sleep(sleeptime);
+		updateBitboard(bitboard, botBitboard, botMove, boardWidth, boardHeight);
+		printBitboard(playerBitboard, botBitboard, playerId, botId, boardWidth, boardHeight);
+	
 		//check for connect 4
 		if(checkWinner(playerBitboard, playerMove, boardWidth, boardHeight, playerId)){
 			cout << "\t\t\t\tYOU WIN!" << endl;
 			playerScore ++;
 			cout << "\t\t\tscore:   you: " << playerScore << "  bot: " << botScore << endl;
-			newGame(bitboard, playerBitboard, botBitboard, playerId, botId);
+			newGame(bitboard, playerBitboard, botBitboard, playerId, botId, boardWidth, boardHeight);
 		}
 		else if (checkWinner(botBitboard, botMove, boardWidth, boardHeight, botId)){
 			cout << "\t\t\t\tYOU LOOSE :(" << endl;
 			botScore ++;
 			cout << "\t\t\tscore:   you: " << playerScore << "  bot: " << botScore << endl;
-			newGame(bitboard, playerBitboard, botBitboard, playerId, botId);
+			newGame(bitboard, playerBitboard, botBitboard, playerId, botId, boardWidth, boardHeight);
 		}
 	}
 }
