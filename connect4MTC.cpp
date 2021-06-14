@@ -45,7 +45,12 @@ void printBitboard(uint64_t &playerBitboard, uint64_t &botBitboard, char playerI
 	for(int i = 0; i!= height;i++){
 		for(int j = 0; j!= width;j++){
 			if(p[index] == 1){
-				cout << "\x1b[31m" << playerId<< "\x1b[0m ";
+				if(playerId == botId){
+					cout << "\x1b[32m" << playerId<< "\x1b[0m ";
+				}
+				else{
+					cout << "\x1b[31m" << playerId<< "\x1b[0m ";
+				}
 			}
 			else if(b[index] == 1){
 				cout << "\x1b[34m" << botId << "\x1b[0m ";
@@ -94,25 +99,9 @@ size_t popcount(size_t n) {
 }
 
 
-//check if there is 4 in row on board 0=no winner, 1=winner;
-int checkWinner(uint64_t board, int move, int width, int height, char id){
-	uint64_t mask = 0; 
-	uint64_t mask2 = 0;
-	uint64_t mask3 = 0;
-	bitset<M> m;
-	uint64_t masked_board;
-    
-	//create mask for 4 in row 0b1111
-	for(int i=0; i!=connectN;i++){
-		mask <<= 1;
-		mask ^= 1;
-	}
-	//create mask width of board 0b1111111
-	for(int i=0; i!=width+1;i++){
-		mask2 <<= 1;
-		mask2 ^= 1;
-	}
-	//4 in row horizontal
+//4 in row HORIZONTAl
+int horizontalWinner(uint64_t board, uint64_t mask, uint64_t mask2, uint64_t masked_board, int width, int height, char id){
+	//4 in row HORIZONTAl
 	for(int i=0; i!=(height*width);i++){
 		masked_board = board & mask & mask2;
 		mask <<= 1;
@@ -122,26 +111,20 @@ int checkWinner(uint64_t board, int move, int width, int height, char id){
 		//check 4 in row after masking
 		if(popcount(masked_board) == connectN){
 			printBitboard(masked_board, masked_board, id, id, width, height); 
+			cout << "horizontal win" << endl;
 			return 1;
 		}
 	}
+	return 0;
+}
 
-	//4 in row vertically
-	mask = 1; //...00000001
-	mask2 = 1;
-	mask3; //111111111111111
-	//create mask with height of 4 
-	for(int i=0; i!=width*connectN;i++){
-		mask3 <<= 1;
-		mask3 ^= 1;
-	}
-	masked_board = 0;
-	int index = 0;
+//check vertical 4 in row
+int verticalWinner(uint64_t board, uint64_t mask, uint64_t mask2, uint64_t mask3, uint64_t masked_board, int width, int height, char id){
 	for(int i=0; i!=(height-connectN+1);i++){
 		for(int j=0; j!=width;j++){  
 			for(int i=0; i!=height;i++){
 				masked_board += board & mask &mask3;
-#if DEBUG 
+/*#if DEBUG 
 				m = board;
 				cout << "board:        " << m << endl;
 				m = mask;int boardWidth = 9;
@@ -153,11 +136,12 @@ int checkWinner(uint64_t board, int move, int width, int height, char id){
 				m = masked_board;
 				cout << "masked_board: " << m << endl;
 				cout << endl;
-#endif	
+#endif	*/
 				mask <<= width;
 				//check 4 in row after masking
 				if(popcount(masked_board) == connectN){
 					printBitboard(masked_board, masked_board, id, id, width, height); 
+					cout << "vertical win" << endl;
 					return 1;
 				}
 			}
@@ -169,9 +153,128 @@ int checkWinner(uint64_t board, int move, int width, int height, char id){
 		mask = mask2;
 		mask3 <<=width;
 	}
-
 	return 0;
 }
+
+
+//check DIAGONAL 4 in row
+int diagonalWinner(uint64_t board, uint64_t mask, uint64_t mask2, uint64_t mask3, uint64_t masked_board, int width, int height, char id){
+	int index = 1;
+	int x = 1;
+	uint64_t mask4 =1;
+	uint64_t mask5 = mask3;
+	for(int k=0;k!=2;k++){
+		for(int i=0; i!=(height-connectN+1);i++){
+			for(int j=0; j!=width;j++){  
+				for(int i=0; i!=height;i++){
+					masked_board += board & mask &mask3;
+#if DEBUG 
+				bitset<M> m;
+				m = board;
+				cout << "board:        " << m << endl;
+				m = mask;
+				cout << "mask:         " << m << endl;
+				m = mask3;
+				cout << "mask3:        " << m << endl;
+				m = masked_board;
+				m = masked_board;
+				cout << "masked_board: " << m << endl;
+				cout << endl;
+#endif	
+					//find first element and shift by differnt amounts 
+					if(popcount(masked_board) >= index){
+						index++;
+						mask <<= width + x;
+					}
+					else{
+						break;
+					}
+					//check 4 in row after masking
+					if(popcount(masked_board) == connectN){
+						cout << "diagonal win" << endl;
+						printBitboard(masked_board, masked_board, id, id, width, height); 
+						return 1;
+					}
+				}
+				index = 1;	
+				mask2<<=1;
+				mask = mask2;
+				masked_board = 0;
+			}
+			mask4 <<= width;
+			mask = mask4;
+			mask2 = mask4;
+			mask3 <<= width;
+		}
+		x=-1;
+		mask =1;
+		mask2 = 1;
+		mask4 =1;
+		mask3 = mask5;
+	}
+	return 0;
+}
+
+
+
+//check if there is 4 in row on board;   0=no winner, 1=winner;
+int checkWinner(uint64_t board, int move, int width, int height, char id){
+	uint64_t mask = 0; 
+	uint64_t mask2 = 0;
+	uint64_t mask3 = 0;
+	uint64_t mask4;
+	bitset<M> m;
+	uint64_t masked_board;
+	int winner = 0;
+    
+    // HORIZONTAL mask
+	//create mask for 4 in row 0b1111
+	for(int i=0; i!=connectN;i++){
+		mask <<= 1;
+		mask ^= 1;
+	}
+	//create mask width of board 0b1111111
+	for(int i=0; i!=width+1;i++){
+		mask2 <<= 1;
+		mask2 ^= 1;
+	}
+	//check 4 in row HORIZONTAl
+	winner = horizontalWinner(board, mask, mask2, masked_board, width, height, id);
+	if(winner == 1 ){
+		return 1;
+	}
+
+	//VERTICAL mask
+	mask = 1; //...00000001
+	mask2 = 1;
+	mask3; //111111111111111
+	//create mask with height of 4 
+	for(int i=0; i!=width*connectN;i++){
+		mask3 <<= 1;
+		mask3 ^= 1;
+	}
+	mask4 =mask3;
+	masked_board = 0;
+	//check 4 in row VERTICAL
+	winner = verticalWinner(board, mask, mask2, mask3, masked_board, width, height, id);
+	if(winner == 1 ){
+		return 1;
+	}
+
+	//DIAGONAL mask
+	mask = 1; //...00000001
+	mask2 = 1;
+	mask3 = mask4;
+	mask3<<=1; //111111111111111
+	//check 4 in row DIAGONAL
+	winner = diagonalWinner(board, mask, mask2, mask3, masked_board, width, height, id);
+	if(winner == 1 ){
+		return 1;
+	}
+	//no winner yet
+	return 0;
+}
+
 
 
 
