@@ -9,6 +9,7 @@
 #include <climits>
 #include <stdint.h>
 
+#include "MCTS.h"
 using namespace std;
 
 #define DEBUG 0
@@ -77,17 +78,6 @@ void printBitboard(uint64_t &playerBitboard, uint64_t &botBitboard, char playerI
 }
 
 
-//add player's move to board vector
-void updateBoard(vector<string>& board, int move, char id){
-	move*=2;
-	for(int i=0; i != board.size();i++){
-		if(i==board.size()-1 || board[i+1][move] != '.' ){
-			board[i][move] = id;
-			break;
-		}
-	}
-}
-
 
 void updateBitboard(uint64_t &board, uint64_t &playerBoard, int move, int width, int height){
 	uint64_t mask = 1 << width-move;
@@ -101,7 +91,6 @@ void updateBitboard(uint64_t &board, uint64_t &playerBoard, int move, int width,
 	}
 	board ^= mask;
 	playerBoard ^=mask;
-	bitset<M> b = board;
 }
 
 //count total 1s in bit
@@ -290,16 +279,6 @@ int checkWinner(uint64_t board, int move, int width, int height, char id){
 
 
 
-//MCT class
-class MCT{
-	public:
-
-	private:
-
-};
-
-
-
 
 
 int main(){
@@ -331,11 +310,25 @@ int main(){
 
 
 	newGame(bitboard, playerBitboard, botBitboard, playerId, botId, boardWidth, boardHeight);
+	//initialize MCTS game tree
+	MCTS gameTree;
+
 	//game loop
 	while(1){
 		cout << "enter index: ";
 		cin >> playerMove;
+
 		//decide bot's move
+
+		///DEBUG
+		cout << "\nDEBUG: " << endl;
+		//int x = gameTree.get_move();
+		//cout << x<< endl;
+		gameTree.insert(playerBitboard);
+		gameTree.insert(botBitboard);
+		gameTree.print_tree();
+		///
+
 		botMove = rand()%7;
 
 		updateBitboard(bitboard, playerBitboard, playerMove, boardWidth, boardHeight);
