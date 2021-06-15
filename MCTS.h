@@ -13,11 +13,12 @@ public:
 		root = NULL;
 		wins = 0;
 		total = 0;
+		move = 0;
 	}
 	uint64_t board; //current state of the board
 	int wins;   //how many times this action brought a win
 	int total;  //total times the board was at this state
-	int move    //action that player made 
+	int move;    //action that player made 
 	Node* root;
 	vector<Node*> childrenVec;  //some possible moves from current board state
 };
@@ -25,12 +26,12 @@ public:
 
 class MCTS{
 	public:
-		MCTS():root(NULL), size(0),move(0){}
+		MCTS():root(NULL), size(0){}
 
-		int get_move(){return move;}
+		//int get_move(){return move;}
 		void insert(uint64_t b);
 		void print_tree(){print_tree(root, 0);};
-		
+
 	private:
 		Node* root;
 		Node* current;
