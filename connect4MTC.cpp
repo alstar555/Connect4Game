@@ -21,9 +21,11 @@ using namespace std;
 
 void printBitboard(uint64_t &playerBitboard, uint64_t &botBitboard, char playerId, char botId, int width, int height);
 void updateBitboard(uint64_t &board, uint64_t &playerBoard, int move, int width, int height);
+size_t popcount(size_t n);
 
 //reset game
-void newGame(uint64_t &bitboard, uint64_t &playerBitboard, uint64_t &botBitboard, char &playerId, char &botId, int width, int height){
+void newGame(uint64_t &bitboard, uint64_t &playerBitboard, uint64_t &botBitboard, char &playerId, char &botId, int width, int height, bool& new_game){
+	new_game = true;
 	bitboard = 0;
 	playerBitboard = 0;
 	botBitboard = 0;
@@ -80,18 +82,38 @@ void printBitboard(uint64_t &playerBitboard, uint64_t &botBitboard, char playerI
 
 
 void updateBitboard(uint64_t &board, uint64_t &playerBoard, int move, int width, int height){
-	uint64_t mask = 1 << width-move;
-	uint64_t masked_board =1;
-	for(int i=0;i!=width*height;i++){
-		masked_board = board & mask;
+	if(move >= width || move<0){ //check out of bouds
+		cout << "out of bounds" << endl;
+		return;
+	}
+	uint64_t mask = 1 << width-move; //000010000000
+	uint64_t masked_board =1;  //000001
+	for(int i=0;i!=height;i++){
+		masked_board = board & mask;  //add mask 1 &0 = 0 
 		if(masked_board==0){
-			break;
+			board ^= mask;
+			playerBoard ^=mask;
+			return;  //return once found a place 
 		}
 		mask = mask << width;
 	}
-	board ^= mask;
-	playerBoard ^=mask;
+	cout << "row full" << endl;
 }
+
+//check if all board is full
+int checkTie(uint64_t &board, int width, int height){
+	uint64_t mask = 0;
+	for(int i=0; i!=(height*width);i++){
+		mask <<= 1;
+		mask ^= 1;
+	}
+	mask <<=1; //shift left to get rid of first int
+	if(popcount(board&mask) == width*height){
+		return 1;
+	}
+	return 0;
+}
+
 
 //count total 1s in bit
 size_t popcount(size_t n) {
@@ -307,9 +329,11 @@ int main(){
 	int botScore =0;
 	char playerId; 
 	char botId;
+	bool new_game = false;
 
 
-	newGame(bitboard, playerBitboard, botBitboard, playerId, botId, boardWidth, boardHeight);
+	newGame(bitboard, playerBitboard, botBitboard, playerId, botId, boardWidth, boardHeight, new_game);
+	new_game = false;
 	//initialize MCTS game tree
 	MCTS gameTree;
 
@@ -318,7 +342,6 @@ int main(){
 		cout << "enter index: ";
 		cin >> playerMove;
 
-		//decide bot's move
 
 		///DEBUG
 		cout << "\nDEBUG: " << endl;
@@ -329,25 +352,33 @@ int main(){
 		gameTree.print_tree();
 		///
 
-		botMove = rand()%7;
+		//decide bot's move
+		botMove = rand()%boardWidth;
 
 		updateBitboard(bitboard, playerBitboard, playerMove, boardWidth, boardHeight);
 		sleep(sleeptime);
 		updateBitboard(bitboard, botBitboard, botMove, boardWidth, boardHeight);
 		printBitboard(playerBitboard, botBitboard, playerId, botId, boardWidth, boardHeight);
 	
-		//check for connect 4
+		//check for connect 4 winner
 		if(checkWinner(playerBitboard, playerMove, boardWidth, boardHeight, playerId)){
 			cout << "\t\t\t\tYOU WIN!" << endl;
 			playerScore ++;
 			cout << "\t\t\tscore:   you: " << playerScore << "  bot: " << botScore << endl;
-			newGame(bitboard, playerBitboard, botBitboard, playerId, botId, boardWidth, boardHeight);
+			newGame(bitboard, playerBitboard, botBitboard, playerId, botId, boardWidth, boardHeight, new_game);
+			gameTree.back_track(1);
 		}
 		else if (checkWinner(botBitboard, botMove, boardWidth, boardHeight, botId)){
 			cout << "\t\t\t\tYOU LOOSE :(" << endl;
 			botScore ++;
 			cout << "\t\t\tscore:   you: " << playerScore << "  bot: " << botScore << endl;
-			newGame(bitboard, playerBitboard, botBitboard, playerId, botId, boardWidth, boardHeight);
+			newGame(bitboard, playerBitboard, botBitboard, playerId, botId, boardWidth, boardHeight, new_game);
+			gameTree.back_track(0);
+		}
+		else if(checkTie(bitboard, boardWidth, boardHeight)){
+			cout << "\t\t\t\tTIE" << endl;
+			cout << "\t\t\tscore:   you: " << playerScore << "  bot: " << botScore << endl;
+			newGame(bitboard, playerBitboard, botBitboard, playerId, botId, boardWidth, boardHeight, new_game);
 		}
 	}
 }

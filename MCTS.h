@@ -19,6 +19,7 @@ public:
 	int wins;   //how many times this action brought a win
 	int total;  //total times the board was at this state
 	int move;    //action that player made 
+	int player; //0=player, 1=bot
 	Node* root;
 	vector<Node*> childrenVec;  //some possible moves from current board state
 };
@@ -31,14 +32,16 @@ class MCTS{
 		//int get_move(){return move;}
 		void insert(uint64_t b);
 		void print_tree(){print_tree(root, 0);};
+		void back_track(int winner);
+
 
 	private:
 		Node* root;
 		Node* current;
 		int size;
-		
+		vector<Node*> path; //remebers path of nodes to win
+		//private functions
 		void print_tree(Node* p, int i);
-
 
 };
 
@@ -65,5 +68,15 @@ void MCTS::print_tree(Node* p, int i){
 		cout << m << endl;
 		i++;
 	}
+}
 
+
+void MCTS::back_track(int winner){//0=player win, 1=bot win
+	//add win to all winning nodes
+	for(Node* p :path){
+		if(winner = p->player){
+			p->wins++;
+		}
+		p->total++;
+	}
 }
